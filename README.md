@@ -1,9 +1,8 @@
 # MiniTools
 
-A React PWA passiong project containing multiple tools to improve efficiency and accuracy currently for Miniso staff.
+A React PWA passion project containing multiple tools to improve the flow of day to day operations for Miniso staff.
 
-**ROSTER TOOL**
-Features
+## ROSTER TOOL
 
 - Shift slots (e.g. 9am - 4pm requires 2 ppl)
 - Employee
@@ -16,8 +15,7 @@ Features
 
 Spits out Gantt chart (can consider other visuals) of roster for the week (visual will largely depend on how they make the roster)
 
-**PRICE CHECKER**
-Features
+## PRICE CHECKER
 
 - Uses OCR for barcode scanning (should provide manual serial number input for times barcode kaput)
 - Uses API to query a price database
@@ -26,8 +24,7 @@ Features
   - If asked to provide price for product, user should be allowed to refuse providing. (They ceebs)
 - Option to also allow price updating (edge case of price changes)
 
-**PAY CALC**
-Features
+## PAY CALC
 
 - This can be calculated locally (no need for API)
 - Input shifts (down to the minute) expected payday (the Thursday the payday comes at)
@@ -35,11 +32,7 @@ Features
 - Accounts for unpaid 30s, bonuses from >6pm, weekends, holidays
 - Gives total sum, as well as breakdown of the bonuses (ideally identical to payslip layout for easier comparison)
 
-**POTENTIAL FEATURES**
-Authentication
+## POTENTIAL FEATURES
 
-- Register emails and passwords
-
-Cloud based data persistence
-
-- Allow for device syncing
+- [ ] User authentication
+- [ ] Cloud synchronisation
