@@ -9,29 +9,33 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
-      registerType: "autoUpdate",
+      registerType: "prompt", // Default, put here for learning sake
+      strategies: "generateSW", // Default, put here for learning sake
+      workbox: {
+        sourcemap: true, // For debugging the service worker
+      },
       manifest: {
         icons: [
           {
-            src: "src/assets/manifest-icon-192.maskable.png",
+            src: "/pwa-192x192.png",
             sizes: "192x192",
             type: "image/png",
             purpose: "any",
           },
           {
-            src: "src/assets/manifest-icon-192.maskable.png",
-            sizes: "192x192",
-            type: "image/png",
-            purpose: "maskable",
-          },
-          {
-            src: "src/assets/manifest-icon-512.maskable.png",
+            src: "/pwa-512x512.png",
             sizes: "512x512",
             type: "image/png",
             purpose: "any",
           },
           {
-            src: "src/assets/manifest-icon-512.maskable.png",
+            src: "/pwa-maskable-192x192.png",
+            sizes: "192x192",
+            type: "image/png",
+            purpose: "maskable",
+          },
+          {
+            src: "/pwa-maskable-512x512.png",
             sizes: "512x512",
             type: "image/png",
             purpose: "maskable",
