@@ -1,24 +1,17 @@
-from pydantic import ValidationError
 import pytest
-from datetime import datetime, date
-from unittest.mock import patch
-from app.models.schemas.paycalc_schema import (
-    ShiftSchema,
-    BreakWindow,
-    DaySummary
-)
+from datetime import datetime
+from app.models.schemas.paycalc_schema import ShiftSchema, BreakWindow, DaySummary
 from app.services.pay_calculator import calculate_pay
 from app.configs.paycalc_cfg import (
     DEFAULT_MULTIPLIER,
-    EVENING_MULTIPLIER,
     SATURDAY_MULTIPLIER,
     SUNDAY_MULTIPLIER,
     HOLIDAY_MULTIPLIER,
-    OVERTIME_MULTIPLIER,
 )
 
 
 # --- Helpers ---
+
 
 def _make_shift(
     start: str,
@@ -36,8 +29,11 @@ def _make_shift(
         break_window=BreakWindow(
             break_start=datetime.fromisoformat(break_start),
             break_end=datetime.fromisoformat(break_end),
-        ) if break_start and break_end else None,
+        )
+        if break_start and break_end
+        else None,
     )
+
 
 def _single(shifts) -> DaySummary:
     """Run calculator and return the single result."""
@@ -48,6 +44,7 @@ def _single(shifts) -> DaySummary:
 
 # --- ShiftSchema Validation ---
 
+
 class TestShiftValidation:
     def test_end_before_start_raises(self):
         with pytest.raises(ValueError, match="shift_end must be after shift_start"):
@@ -55,27 +52,46 @@ class TestShiftValidation:
 
     def test_overtime_end_before_shift_end_raises(self):
         with pytest.raises(ValueError, match="overtime_end must be after shift_end"):
-            _make_shift("2025-01-13T08:00", "2025-01-13T16:00", overtime_end="2025-01-13T15:00")
+            _make_shift(
+                "2025-01-13T08:00", "2025-01-13T16:00", overtime_end="2025-01-13T15:00"
+            )
 
     def test_break_outside_shift_raises(self):
-        with pytest.raises(ValueError, match="Break times must be within shift and overtime period"):
-            _make_shift("2025-01-13T08:00", "2025-01-13T16:00", break_start="2025-01-13T07:00", break_end="2025-01-13T07:30")
+        with pytest.raises(
+            ValueError, match="Break times must be within shift and overtime period"
+        ):
+            _make_shift(
+                "2025-01-13T08:00",
+                "2025-01-13T16:00",
+                break_start="2025-01-13T07:00",
+                break_end="2025-01-13T07:30",
+            )
 
     def test_break_end_before_start_raises(self):
         with pytest.raises(ValueError, match="break_end must be after break_start"):
-            _make_shift("2025-01-13T08:00", "2025-01-13T16:00", break_start="2025-01-13T13:00", break_end="2025-01-13T12:00")
+            _make_shift(
+                "2025-01-13T08:00",
+                "2025-01-13T16:00",
+                break_start="2025-01-13T13:00",
+                break_end="2025-01-13T12:00",
+            )
 
     def test_zero_pay_rate_raises(self):
-        with pytest.raises(ValueError, match="pay_rate must be positive, you are not a slave!"):
+        with pytest.raises(
+            ValueError, match="pay_rate must be positive, you are not a slave!"
+        ):
             _make_shift("2025-01-13T08:00", "2025-01-13T16:00", pay_rate=0)
 
     def test_negative_pay_rate_raises(self):
-        with pytest.raises(ValueError, match="pay_rate must be positive, you are not a slave!"):
+        with pytest.raises(
+            ValueError, match="pay_rate must be positive, you are not a slave!"
+        ):
             _make_shift("2025-01-13T08:00", "2025-01-13T16:00", pay_rate=-10)
 
 
 # --- Basic Pay (Weekday, no extras) ---
 # 2025-01-13 is a Monday
+
 
 class TestBasePay:
     def test_simple_8_hour_shift(self):
@@ -89,10 +105,16 @@ class TestBasePay:
 
     def test_shift_with_break(self):
         # 8hrs shift - 0.5hr break = 7.5hrs * 1.0 * $25 = $187.50
-        summary = _single([_make_shift(
-            "2025-01-13T08:00", "2025-01-13T16:00",
-            break_start="2025-01-13T12:00", break_end="2025-01-13T12:30",
-        )])
+        summary = _single(
+            [
+                _make_shift(
+                    "2025-01-13T08:00",
+                    "2025-01-13T16:00",
+                    break_start="2025-01-13T12:00",
+                    break_end="2025-01-13T12:30",
+                )
+            ]
+        )
         assert summary.hours_worked == 7.5
         assert summary.base_hours == 7.5
         assert summary.base_total == 187.50
@@ -107,6 +129,7 @@ class TestBasePay:
 
 # --- Weekend Pay ---
 # 2026-01-31 is a Saturday, 2026-02-01 is a Sunday
+
 
 class TestWeekendPay:
     def test_saturday(self):
@@ -126,6 +149,7 @@ class TestWeekendPay:
 
 # --- Holiday Pay ---
 
+
 class TestHolidayPay:
     def test_nsw_holiday_detected(self):
         # 2025-01-01 is New Year's Day
@@ -138,13 +162,16 @@ class TestHolidayPay:
     def test_holiday_on_sunday_uses_holiday_rate(self):
         # If a holiday falls on a Sunday, holiday rate takes priority
         # Use 2026's Easter Sunday (2026-04-05)
-        summary = _single([_make_shift("2026-04-05T08:00", "2026-04-05T16:00")])  # Easter Sunday
+        summary = _single(
+            [_make_shift("2026-04-05T08:00", "2026-04-05T16:00")]
+        )  # Easter Sunday
         assert summary.day_type == "Easter Sunday"
         assert summary.base_pay_multiplier == HOLIDAY_MULTIPLIER
 
 
 # --- Evening Pay ---
 # Evening window is 17:00–21:00
+
 
 class TestEveningPay:
     def test_partial_evening_overlap(self):
@@ -176,10 +203,16 @@ class TestEveningPay:
         # Base: 3hrs (18:00 - 15:00) - 0.25hr break = 2.75hrs * 1.0 * $25 = $68.75
         # Evening: 3hrs (21:00 - 18:00) - 0.25hr break = 2.75hrs * 1.15 * $25 = $79.06
         # Total: $147.81
-        summary = _single([_make_shift(
-            "2025-01-13T15:00", "2025-01-13T21:00",
-            break_start="2025-01-13T17:45", break_end="2025-01-13T18:15",
-        )])
+        summary = _single(
+            [
+                _make_shift(
+                    "2025-01-13T15:00",
+                    "2025-01-13T21:00",
+                    break_start="2025-01-13T17:45",
+                    break_end="2025-01-13T18:15",
+                )
+            ]
+        )
         assert summary.base_hours == 2.75
         assert summary.base_total == 68.75
         assert summary.evening_hours == 2.75
@@ -195,15 +228,21 @@ class TestEveningPay:
 
 # --- Overtime Pay ---
 
+
 class TestOvertimePay:
     def test_overtime_hours_calculated(self):
         # Shift 08:00–16:00, overtime until 18:00 = 2hrs OT
         # base: 8hrs * $25 = $200
         # overtime: 2hrs * 2.0 * $25 = $100
-        summary = _single([_make_shift(
-            "2025-01-13T08:00", "2025-01-13T16:00",
-            overtime_end="2025-01-13T18:00",
-        )])
+        summary = _single(
+            [
+                _make_shift(
+                    "2025-01-13T08:00",
+                    "2025-01-13T16:00",
+                    overtime_end="2025-01-13T18:00",
+                )
+            ]
+        )
         assert summary.overtime_hours == 2.0
         assert summary.overtime_total == 100.0
         assert summary.day_total == 300.0
@@ -216,6 +255,7 @@ class TestOvertimePay:
 
 # --- Combined / Edge Cases ---
 
+
 class TestCombined:
     def test_saturday_evening_and_overtime(self):
         # Saturday 15:00–19:00, overtime until 20:00
@@ -223,10 +263,15 @@ class TestCombined:
         # evening: 0 BECAUSE Saturday multiplier prioritizes over evening multiplier
         # overtime: 1hr (19:00–20:00) * 2.0 * $25 = $50.00
         # Total: $172.50
-        summary = _single([_make_shift(
-            "2025-01-18T15:00", "2025-01-18T19:00",
-            overtime_end="2025-01-18T20:00",
-        )])
+        summary = _single(
+            [
+                _make_shift(
+                    "2025-01-18T15:00",
+                    "2025-01-18T19:00",
+                    overtime_end="2025-01-18T20:00",
+                )
+            ]
+        )
         assert summary.day_type == "Saturday"
         assert summary.base_total == 125.00
         assert summary.evening_total == 0.0
@@ -251,11 +296,17 @@ class TestCombined:
         # hours_worked: 8hrs - 0.5hr break = 7.5hrs
         # base: 7.5hrs * $25 = $187.50
         # overtime: 1hr * 1.5 * $25 = $37.50
-        summary = _single([_make_shift(
-            "2026-02-02T08:00", "2026-02-02T16:00",
-            overtime_end="2026-02-02T17:00",
-            break_start="2026-02-02T12:00", break_end="2026-02-02T12:30",
-        )])
+        summary = _single(
+            [
+                _make_shift(
+                    "2026-02-02T08:00",
+                    "2026-02-02T16:00",
+                    overtime_end="2026-02-02T17:00",
+                    break_start="2026-02-02T12:00",
+                    break_end="2026-02-02T12:30",
+                )
+            ]
+        )
         assert summary.hours_worked == 7.5
         assert summary.base_total == 187.50
         assert summary.overtime_total == 50.00
