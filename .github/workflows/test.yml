@@ -16,6 +16,18 @@ jobs:
             - name: Checkout code
               uses: actions/checkout@v4
 
+            - name: Ruff linter
+              uses: astral-sh/ruff-action@v3
+              with:
+                src: "backend"
+                args: "check ."
+            
+            - name: Ruff format check
+              uses: astral-sh/ruff-action@v3
+              with:
+                src: "backend"
+                args: "format --check --diff"
+
             - name: Set up Python
               uses: actions/setup-python@v5
               with:
