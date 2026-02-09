@@ -38,8 +38,9 @@ def _make_shift(
 def _single(shifts) -> DaySummary:
     """Run calculator and return the single result."""
     results = calculate_pay(shifts)
-    assert len(results["pay_summaries"]) == 1
-    return results["pay_summaries"][0]
+    pay_summaries = list(results["pay_summaries"])
+    assert len(pay_summaries) == 1
+    return pay_summaries[0]
 
 
 # --- ShiftSchema Validation ---
@@ -287,7 +288,7 @@ class TestCombined:
             _make_shift("2025-01-14T09:00", "2025-01-14T17:00"),  # Tuesday
         ]
         results = calculate_pay(shifts)
-        assert len(results["pay_summaries"]) == 2
+        assert len(list(results["pay_summaries"])) == 2
         assert results["total_hours"] == 16.0
         assert results["total_pay"] == 400.0
 

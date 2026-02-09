@@ -1,6 +1,7 @@
 from pydantic import BaseModel, model_validator
 from datetime import datetime
-from typing import Optional
+from typing import Iterable, Optional
+from typing_extensions import TypedDict
 from app.configs.paycalc_cfg import EVENING_MULTIPLIER, OVERTIME_MULTIPLIER
 
 
@@ -65,3 +66,9 @@ class DaySummary(BaseModel):
 
     hours_worked: float
     day_total: float
+
+
+class PayCalcResponse(TypedDict):
+    pay_summaries: Iterable[DaySummary]
+    total_hours: float
+    total_pay: float

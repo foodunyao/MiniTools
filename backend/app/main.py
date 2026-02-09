@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from api.routes.paycalc import router as paycalc_router
+from app.api.routes.paycalc_route import router as paycalc_router
 
 app = FastAPI()
 app.include_router(paycalc_router)

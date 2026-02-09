@@ -1,18 +1,18 @@
 from datetime import datetime
-from typing import Iterable, Dict, Any
-from app.models.schemas.paycalc_schema import ShiftSchema, DaySummary
+from typing import Iterable
 import holidays
+from app.models.schemas.paycalc_schema import DaySummary, PayCalcResponse, ShiftSchema
 
 # Config
 from ..configs.paycalc_cfg import (
     DEFAULT_MULTIPLIER,
+    EVENING_END,
+    EVENING_MULTIPLIER,
+    EVENING_START,
+    HOLIDAY_MULTIPLIER,
+    OVERTIME_MULTIPLIER,
     SATURDAY_MULTIPLIER,
     SUNDAY_MULTIPLIER,
-    HOLIDAY_MULTIPLIER,
-    EVENING_MULTIPLIER,
-    OVERTIME_MULTIPLIER,
-    EVENING_START,
-    EVENING_END,
 )
 
 _nsw_holidays = holidays.country_holidays("AU", subdiv="NSW")
@@ -58,7 +58,7 @@ def _get_day_type(day: datetime) -> tuple[str, float]:
 
 
 # The big pay calulator
-def calculate_pay(shifts: Iterable[ShiftSchema]) -> Dict[str, Any]:
+def calculate_pay(shifts: Iterable[ShiftSchema]) -> PayCalcResponse:
     summaries = []
 
     for shift in shifts:
@@ -127,10 +127,8 @@ def calculate_pay(shifts: Iterable[ShiftSchema]) -> Dict[str, Any]:
             )
         )
 
-    total_hours = sum(s.hours_worked for s in summaries)
+    total_hours = sum(s.hours_worked + s.overtime_hours for s in summaries)
     total_pay = sum(s.day_total for s in summaries)
-    return {
-        "pay_summaries": summaries,
-        "total_hours": total_hours,
-        "total_pay": total_pay,
-    }
+    return PayCalcResponse(
+        pay_summaries=summaries, total_hours=total_hours, total_pay=total_pay
+    )
