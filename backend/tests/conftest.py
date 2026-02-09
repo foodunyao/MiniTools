@@ -9,6 +9,7 @@ sys.path.insert(0, str(ROOT))
 
 from app.main import app  # noqa: E402
 
+
 @pytest.fixture
 def client():
     """Creates a test client for FastAPI"""
