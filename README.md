@@ -36,3 +36,4 @@ Spits out Gantt chart (can consider other visuals) of roster for the week (visua
 
 - [ ] User authentication
 - [ ] Cloud synchronisation
+- [ ] Offline mode
