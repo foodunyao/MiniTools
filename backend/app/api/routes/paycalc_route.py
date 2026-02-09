@@ -1,4 +1,4 @@
-from typing import Any, Iterable, List
+from typing import List
 from fastapi import APIRouter
 from app.services.pay_calculator import calculate_pay
 from app.models.schemas.paycalc_schema import ShiftSchema, PayCalcResponse
